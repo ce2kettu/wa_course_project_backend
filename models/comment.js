@@ -5,6 +5,7 @@ const schema = new Schema({
     user: { type: Schema.Types.ObjectId, ref: 'User' },
     post: { type: Schema.Types.ObjectId, ref: 'Post' },
     body: String,
+    score: { type: String, default: 0 },
 }, {
     timestamps: true
 });

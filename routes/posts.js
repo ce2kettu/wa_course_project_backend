@@ -1,4 +1,5 @@
 const express = require('express');
+const passport = require('passport');
 const { body, param, validationResult } = require("express-validator");
 const router = express.Router();
 const Post = require('../models/post');
