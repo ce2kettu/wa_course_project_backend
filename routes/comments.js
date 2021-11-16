@@ -26,9 +26,11 @@ router.post('/:postId/newComment',
             const comment = new Comment();
             comment.body = req.body.body;
             comment.post = post._id;
-            post.user = req.user._id;
+            comment.user = req.user._id;
+            await comment.save();
+            post.comments.push(comment);
             await post.save();
-            return res.json({ success: true, post });
+            return res.json({ success: true, comment });
         } catch (err) {
             return res.status(500).json({ success: false, message: "Internal Server Error" });
         }
@@ -52,10 +54,10 @@ router.put('/:commentId/edit',
                 return res.status(400).json({ success: false, message: "Bad Request" });
             }
 
-            if (req.user._id == comment.user || req.user.isAdmin) {
+            if (req.user._id.equals(comment.user) || req.user.isAdmin) {
                 comment.body = req.body.body;
                 await comment.save();
-                res.json({ success: true, comment });
+                return res.json({ success: true, comment });
             } else {
                 return res.status(400).json({ success: false, message: "Bad Request" });
             }
@@ -75,20 +77,22 @@ router.delete('/:commentId/delete',
                 return res.status(400).json({ success: false, message: "Bad Request", errors: errors.array() });
             }
 
-            const comment = await Comment.findById(req.params.commentId);
+            const comment = await Comment.findById(req.params.commentId).populate('post');
 
             if (!comment) {
                 return res.status(400).json({ success: false, message: "Bad Request" });
             }
 
             if (req.user.isAdmin) {
+                comment.post.comments.pull(comment);
                 await comment.delete();
-                res.json({ success: true });
+                await comment.post.save();
+                return res.json({ success: true });
             } else {
                 return res.status(400).json({ success: false, message: "Bad Request" });
             }
         } catch (err) {
-            return res.status(500).json({ success: false, message: "Internal Server Error" });
+            return res.status(500).json({ success: false, message: "Internal Server Error" + err.message });
         }
     });
 
