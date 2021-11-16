@@ -24,9 +24,9 @@ router.post('/post/:postId',
                 return res.status(400).json({ success: false, message: "Bad Request" });
             }
 
-            const priorVote = await Vote.find({ post: post._id, user: req.user._id });
+            const priorVote = await Vote.findOne({ post: post._id, user: req.user._id });
 
-            if (!priorVote) {
+            if (priorVote) {
                 return res.status(400).json({ success: false, message: "Already voted" });
             }
 
@@ -34,8 +34,9 @@ router.post('/post/:postId',
             vote.post = post._id;
             vote.user = req.user._id;
             vote.type = req.body.type;
+            const increment = req.body.type === 'up' ? 1 : -1;
             await vote.save();
-            await Post.findOneAndUpdate({ _id: post._id }, { $inc: { 'score': req.params.type == 'up' ? 1 : -1 } });
+            await Post.findOneAndUpdate({ _id: post._id }, { $inc: { 'score': increment } });
             return res.json({ success: true });
         } catch (err) {
             return res.status(500).json({ success: false, message: "Internal Server Error" });
@@ -60,9 +61,9 @@ router.post('/comment/:commentId',
                 return res.status(400).json({ success: false, message: "Bad Request" });
             }
 
-            const priorVote = await Vote.find({ comment: comment._id, user: req.user._id });
+            const priorVote = await Vote.findOne({ comment: comment._id, user: req.user._id });
 
-            if (!priorVote) {
+            if (priorVote) {
                 return res.status(400).json({ success: false, message: "Already voted" });
             }
 
@@ -70,8 +71,9 @@ router.post('/comment/:commentId',
             vote.comment = comment._id;
             vote.user = req.user._id;
             vote.type = req.body.type;
+            const increment = req.body.type == 'up' ? 1 : -1;
             await vote.save();
-            await Comment.findOneAndUpdate({ _id: post._id }, { $inc: { 'score': req.params.type == 'up' ? 1 : -1 } });
+            await Comment.findOneAndUpdate({ _id: post._id }, { $inc: { 'score': increment } });
             return res.json({ success: true });
         } catch (err) {
             return res.status(500).json({ success: false, message: "Internal Server Error" });
