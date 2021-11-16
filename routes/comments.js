@@ -1,44 +1,30 @@
 const express = require('express');
-const { body, param, validationResult } = require("express-validator");
 const router = express.Router();
-const Post = require('../models/post');
+const { body, param, validationResult } = require("express-validator");
 const Comment = require('../models/comment');
+const Post = require('../models/post');
 
-router.get('/all', async (req, res, next) => {
-    try {
-        const posts = await Post.find({}).populate('user');
-        return res.json({ success: true, posts: posts || [] });
-    } catch (err) {
-        return res.status(500).json({ success: false, message: "Internal Server Error" });
-    }
-});
-
-router.get('/:postId',
-    param('postId').exists().isMongoId(),
-    async (req, res, next) => {
-        try {
-            const post = await Post.findById(req.params.postId).populate('user', 'comments')
-                .populate('comments.user');
-
-            if (!post) {
-                return res.status(400).json({ success: false, message: "Bad Request" });
-            } else {
-                return res.json({ success: true, post });
-            }
-        } catch (err) {
-            return res.status(500).json({ success: false, message: "Internal Server Error" });
-        }
-    });
-
-router.post('/new',
+router.post('/:postId/newComment',
     passport.authenticate('jwt', { session: false }),
-    body('title').exists(),
+    param('postId').exists().isMongoId(),
     body('body').exists(),
     async (req, res, next) => {
         try {
-            const post = new Post();
-            post.title = req.body.title;
-            post.body = req.body.body;
+            const errors = validationResult(req);
+
+            if (!errors.isEmpty()) {
+                return res.status(400).json({ success: false, message: "Bad Request", errors: errors.array() });
+            }
+
+            const post = await Post.findById(req.params.postId);
+
+            if (!post) {
+                return res.status(400).json({ success: false, message: "Bad Request" });
+            }
+
+            const comment = new Comment();
+            comment.body = req.body.body;
+            comment.post = post._id;
             post.user = req.user._id;
             await post.save();
             return res.json({ success: true, post });
@@ -47,10 +33,9 @@ router.post('/new',
         }
     });
 
-router.put('/:postId/edit',
+router.put('/:commentId/edit',
     passport.authenticate('jwt', { session: false }),
-    param('postId').exists().isMongoId(),
-    body('title').exists(),
+    param('commentId').exists().isMongoId(),
     body('body').exists(),
     async (req, res, next) => {
         try {
@@ -60,17 +45,16 @@ router.put('/:postId/edit',
                 return res.status(400).json({ success: false, message: "Bad Request", errors: errors.array() });
             }
 
-            const post = await Post.findById(req.params.postId);
+            const comment = await Comment.findById(req.params.commentId);
 
-            if (!post) {
+            if (!comment) {
                 return res.status(400).json({ success: false, message: "Bad Request" });
             }
 
-            if (req.user._id == post.user || req.user.isAdmin) {
-                post.title = req.body.title;
-                post.body = req.body.body;
-                await post.save();
-                res.json({ success: true, post });
+            if (req.user._id == comment.user || req.user.isAdmin) {
+                comment.body = req.body.body;
+                await comment.save();
+                res.json({ success: true, comment });
             } else {
                 return res.status(400).json({ success: false, message: "Bad Request" });
             }
@@ -79,9 +63,9 @@ router.put('/:postId/edit',
         }
     });
 
-router.delete('/:postId/delete',
+router.delete('/:commentId/delete',
     passport.authenticate('jwt', { session: false }),
-    param('postId').exists().isMongoId(),
+    param('commentId').exists().isMongoId(),
     async (req, res, next) => {
         try {
             const errors = validationResult(req);
@@ -90,16 +74,14 @@ router.delete('/:postId/delete',
                 return res.status(400).json({ success: false, message: "Bad Request", errors: errors.array() });
             }
 
-            const post = await Post.findById(req.params.postId);
+            const comment = await Comment.findById(req.params.commentId);
 
-            if (!post) {
+            if (!comment) {
                 return res.status(400).json({ success: false, message: "Bad Request" });
             }
 
             if (req.user.isAdmin) {
-                const postId = post._id;
-                await post.delete();
-                Comment.remove({ post: postId }).exec();
+                await comment.delete();
                 res.json({ success: true });
             } else {
                 return res.status(400).json({ success: false, message: "Bad Request" });
