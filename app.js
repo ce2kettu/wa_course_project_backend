@@ -27,7 +27,7 @@ passport.use(new JwtStrategy(options, (jwtPayload, done) => {
         }
 
         return done(null, user || false);
-    }).populate('+isAdmin +email');
+    }).select('+isAdmin +email');
 }));
 
 const app = express();
