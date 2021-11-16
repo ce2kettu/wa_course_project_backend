@@ -8,4 +8,4 @@ const schema = new Schema({
     type: { type: String, enum: ['up', 'down'] },
 });
 
-module.exports = mongoose.model('Vote', schema);
+module.exports = mongoose.models.Vote || mongoose.model('Vote', schema);
