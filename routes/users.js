@@ -17,7 +17,7 @@ router.get('/profile/:userId',
         return res.status(400).json({ success: false, message: 'Bad Request', errors: errors.array() });
       }
 
-      const user = await User.findById(req.params.userId).populate('+bio');
+      const user = await User.findById(req.params.userId).select('+bio');
 
       return res.json({ success: true, profile: user });
     } catch {
@@ -29,7 +29,7 @@ router.get('/profile',
   passport.authenticate('jwt', { session: false }),
   async (req, res, next) => {
     try {
-      const user = await User.findById(req.user._id).populate('+bio +email');
+      const user = await User.findById(req.user._id).select('+bio +email');
       return res.json({ success: true, profile: user });
     } catch {
       res.status(500).json({ success: false, message: 'Internal Server Error' });

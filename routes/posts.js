@@ -18,7 +18,14 @@ router.get('/:postId',
     param('postId').exists().isMongoId(),
     async (req, res, next) => {
         try {
-            const post = await Post.findById(req.params.postId).populate('user', 'comments')
+            const errors = validationResult(req);
+
+            if (!errors.isEmpty()) {
+                return res.status(400).json({ success: false, message: "Bad Request", errors: errors.array() });
+            }
+
+            const post = await Post.findById(req.params.postId).populate('comments')
+                .populate('user')
                 .populate('comments.user');
 
             if (!post) {
@@ -37,6 +44,12 @@ router.post('/new',
     body('body').exists(),
     async (req, res, next) => {
         try {
+            const errors = validationResult(req);
+
+            if (!errors.isEmpty()) {
+                return res.status(400).json({ success: false, message: "Bad Request", errors: errors.array() });
+            }
+
             const post = new Post();
             post.title = req.body.title;
             post.body = req.body.body;
@@ -67,7 +80,7 @@ router.put('/:postId/edit',
                 return res.status(400).json({ success: false, message: "Bad Request" });
             }
 
-            if (req.user._id == post.user || req.user.isAdmin) {
+            if (req.user._id.equals(post.user) || req.user.isAdmin) {
                 post.title = req.body.title;
                 post.body = req.body.body;
                 await post.save();
