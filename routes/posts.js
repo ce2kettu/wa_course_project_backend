@@ -24,9 +24,12 @@ router.get('/:postId',
                 return res.status(400).json({ success: false, message: "Bad Request", errors: errors.array() });
             }
 
-            const post = await Post.findById(req.params.postId).populate('comments')
+            const post = await Post.findById(req.params.postId)
                 .populate('user')
-                .populate('comments.user');
+                .populate({
+                    path: 'comments',
+                    populate: { path: 'user' }
+                });
 
             if (!post) {
                 return res.status(400).json({ success: false, message: "Bad Request" });
