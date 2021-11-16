@@ -6,9 +6,9 @@ const schema = new Schema({
     title: String,
     body: String,
     comments: [{ type: Schema.Types.ObjectId, ref: 'Comment' }],
-    score: { type: String, default: 0 },
+    score: { type: Number, default: 0 },
 }, {
     timestamps: true
 });
 
-module.exports = mongoose.model('Vote', schema);
+module.exports = mongoose.model('Post', schema);
