@@ -7,7 +7,7 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/user');
 
 router.get('/profile/:userId',
-  passport.authenticate('jwt', { session: false }),
+  //passport.authenticate('jwt', { session: false, failWithError: true }),
   param('userId').exists().isMongoId(),
   async (req, res, next) => {
     try {
@@ -26,10 +26,10 @@ router.get('/profile/:userId',
   });
 
 router.get('/profile',
-  passport.authenticate('jwt', { session: false }),
+  passport.authenticate('jwt', { session: false, failWithError: true }),
   async (req, res, next) => {
     try {
-      const user = await User.findById(req.user._id).select('+bio +email');
+      const user = await User.findById(req.user._id).select('+bio +email +isAdmin');
       return res.json({ success: true, profile: user });
     } catch {
       res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -37,6 +37,7 @@ router.get('/profile',
   });
 
 router.post('/register',
+  body('displayName').exists(),
   body('email').isEmail().normalizeEmail(),
   body('password').isStrongPassword(),
   async (req, res, next) => {
@@ -56,6 +57,7 @@ router.post('/register',
 
         bcrypt.hash(req.body.password, 8, async (err, hash) => {
           newUser.email = req.body.email;
+          newUser.displayName = req.body.displayName;
           newUser.password = hash;
           await newUser.save();
           return res.json({ success: true });
@@ -68,8 +70,8 @@ router.post('/register',
   });
 
 router.post('/login',
-  body('email').exists(),
-  body('password').exists(),
+  body('email').isEmail().normalizeEmail(),
+  body('password').isStrongPassword(),
   async (req, res, next) => {
     try {
       const errors = validationResult(req);
@@ -99,7 +101,8 @@ router.post('/login',
                 expiresIn: '30d'
               },
               (err, token) => {
-                res.json({ success: true, token });
+                res.json({ success: true, token, 
+                  user: { _id: user._id, displayName: user.displayName, email: user.email } });
               }
             );
           } else {

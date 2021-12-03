@@ -42,7 +42,7 @@ router.get('/:postId',
     });
 
 router.post('/new',
-    passport.authenticate('jwt', { session: false }),
+    passport.authenticate('jwt', { session: false, failWithError: true }),
     body('title').exists(),
     body('body').exists(),
     async (req, res, next) => {
@@ -65,7 +65,7 @@ router.post('/new',
     });
 
 router.put('/:postId/edit',
-    passport.authenticate('jwt', { session: false }),
+    passport.authenticate('jwt', { session: false, failWithError: true }),
     param('postId').exists().isMongoId(),
     body('title').exists(),
     body('body').exists(),
@@ -97,7 +97,7 @@ router.put('/:postId/edit',
     });
 
 router.delete('/:postId/delete',
-    passport.authenticate('jwt', { session: false }),
+    passport.authenticate('jwt', { session: false, failWithError: true }),
     param('postId').exists().isMongoId(),
     async (req, res, next) => {
         try {
