@@ -7,6 +7,8 @@ const schema = new Schema({
     displayName: String,
     bio: { type: String, select: false },
     isAdmin: { type: Boolean, select: false, default: false },
+}, {
+    timestamps: true
 });
 
 module.exports = mongoose.model('User', schema);
