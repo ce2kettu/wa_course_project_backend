@@ -65,7 +65,14 @@ router.post('/post/:postId',
             const priorVote = await Vote.findOne({ post: post._id, user: req.user._id });
 
             if (priorVote) {
-                return res.status(400).json({ success: false, message: "Already voted" });
+                if (priorVote.type == req.body.type) {
+                    return res.status(400).json({ success: false, message: "Already voted" });
+                } else {
+                    priorVote.type = req.body.type;
+                    await Post.findOneAndUpdate({ _id: post._id }, { $inc: { 'score': req.body.type === 'up' ? 2 : -2 } }, { timestamps: false });
+                    await priorVote.save();
+                    return res.json({ success: true });
+                }
             }
 
             const vote = new Vote();
@@ -102,7 +109,14 @@ router.post('/comment/:commentId',
             const priorVote = await Vote.findOne({ comment: comment._id, user: req.user._id });
 
             if (priorVote) {
-                return res.status(400).json({ success: false, message: "Already voted" });
+                if (priorVote.type == req.body.type) {
+                    return res.status(400).json({ success: false, message: "Already voted" });
+                } else {
+                    priorVote.type = req.body.type;
+                    await Comment.findOneAndUpdate({ _id: comment._id }, { $inc: { 'score': req.body.type === 'up' ? 2 : -2 } }, { timestamps: false });
+                    await priorVote.save();
+                    return res.json({ success: true });
+                }
             }
 
             const vote = new Vote();
