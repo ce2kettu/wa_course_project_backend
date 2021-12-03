@@ -6,8 +6,46 @@ const Vote = require('../models/vote');
 const Comment = require('../models/comment');
 const Post = require('../models/post');
 
+router.post('/hasVoted/:contentId',
+    passport.authenticate('jwt', { session: false, failWithError: true }),
+    param('contentId').exists().isMongoId(),
+    body('type').isIn(['post', 'comment']),
+    async (req, res, next) => {
+        try {
+            const errors = validationResult(req);
+
+            if (!errors.isEmpty()) {
+                return res.status(400).json({ success: false, message: "Bad Request", errors: errors.array() });
+            }
+
+            let content;
+
+            if (req.body.type === 'post') {
+                content = await Post.findById(req.params.contentId);
+            } else {
+                content = await Comment.findById(req.params.contentId);
+            }
+
+            if (!content) {
+                return res.status(400).json({ success: false, message: "Bad Request" });
+            }
+
+            let priorVote;
+
+            if (req.body.type === 'post') {
+               priorVote = await Vote.findOne({ post: content._id, user: req.user._id });
+            } else {
+               priorVote = await Vote.findOne({ comment: content._id, user: req.user._id });
+            }
+
+            return res.json({ success: true, hasVoted: priorVote != null, type: priorVote ? priorVote.type : null });
+        } catch (err) {
+            return res.status(500).json({ success: false, message: "Internal Server Error" });
+        }
+    });
+
 router.post('/post/:postId',
-    passport.authenticate('jwt', { session: false }),
+    passport.authenticate('jwt', { session: false, failWithError: true }),
     param('postId').exists().isMongoId(),
     body('type').isIn(['up', 'down']),
     async (req, res, next) => {
@@ -36,7 +74,7 @@ router.post('/post/:postId',
             vote.type = req.body.type;
             const increment = req.body.type === 'up' ? 1 : -1;
             await vote.save();
-            await Post.findOneAndUpdate({ _id: post._id }, { $inc: { 'score': increment } });
+            await Post.findOneAndUpdate({ _id: post._id }, { $inc: { 'score': increment } }, { timestamps: false });
             return res.json({ success: true });
         } catch (err) {
             return res.status(500).json({ success: false, message: "Internal Server Error" });
@@ -44,7 +82,7 @@ router.post('/post/:postId',
     });
 
 router.post('/comment/:commentId',
-    passport.authenticate('jwt', { session: false }),
+    passport.authenticate('jwt', { session: false, failWithError: true }),
     param('commentId').exists().isMongoId(),
     body('type').isIn(['up', 'down']),
     async (req, res, next) => {
@@ -73,7 +111,7 @@ router.post('/comment/:commentId',
             vote.type = req.body.type;
             const increment = req.body.type == 'up' ? 1 : -1;
             await vote.save();
-            await Comment.findOneAndUpdate({ _id: post._id }, { $inc: { 'score': increment } });
+            await Comment.findOneAndUpdate({ _id: comment._id }, { $inc: { 'score': increment } }, { timestamps: false });
             return res.json({ success: true });
         } catch (err) {
             return res.status(500).json({ success: false, message: "Internal Server Error" });

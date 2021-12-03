@@ -6,7 +6,7 @@ const Comment = require('../models/comment');
 const Post = require('../models/post');
 
 router.post('/:postId/newComment',
-    passport.authenticate('jwt', { session: false }),
+    passport.authenticate('jwt', { session: false, failWithError: true }),
     param('postId').exists().isMongoId(),
     body('body').exists(),
     async (req, res, next) => {
@@ -37,7 +37,7 @@ router.post('/:postId/newComment',
     });
 
 router.put('/:commentId/edit',
-    passport.authenticate('jwt', { session: false }),
+    passport.authenticate('jwt', { session: false, failWithError: true }),
     param('commentId').exists().isMongoId(),
     body('body').exists(),
     async (req, res, next) => {
@@ -67,7 +67,7 @@ router.put('/:commentId/edit',
     });
 
 router.delete('/:commentId/delete',
-    passport.authenticate('jwt', { session: false }),
+    passport.authenticate('jwt', { session: false, failWithError: true }),
     param('commentId').exists().isMongoId(),
     async (req, res, next) => {
         try {
