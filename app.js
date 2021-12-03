@@ -6,6 +6,7 @@ const logger = require('morgan');
 const mongoose = require('mongoose');
 const jwt = require('jsonwebtoken');
 const passport = require('passport');
+const cors = require('cors');
 const User = require('./models/user');
 
 const mongoDB = process.env.MONGOURL || 'mongodb://localhost:27017/testdb';
@@ -32,6 +33,7 @@ passport.use(new JwtStrategy(options, (jwtPayload, done) => {
 
 const app = express();
 
+app.use(cors());
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -61,7 +63,7 @@ app.use(function (err, req, res, next) {
     const message = isDev ? err.message : "Internal server error";
     const error = isDev ? err : {};
 
-    res.status(err.status || 500).json({ message });
+    res.status(err.status || 500).json({ success: false, message });
 });
 
 module.exports = app;
