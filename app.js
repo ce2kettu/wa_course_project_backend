@@ -9,6 +9,7 @@ const passport = require('passport');
 const cors = require('cors');
 const User = require('./models/user');
 
+// Connect to MongoDB
 const mongoDB = process.env.MONGOURL || 'mongodb://localhost:27017/testdb';
 mongoose.connect(mongoDB);
 mongoose.Promise = global.Promise;
@@ -16,6 +17,7 @@ const db = mongoose.connection;
 db.on('connected', () => console.log('Connected to MongoDB'));
 db.on('error', () => console.error('MongoDB connection error'));
 
+// Configure JWT authentication
 const JwtStrategy = require('passport-jwt').Strategy;
 const ExtractJwt = require('passport-jwt').ExtractJwt;
 var options = {}
@@ -33,6 +35,7 @@ passport.use(new JwtStrategy(options, (jwtPayload, done) => {
 
 const app = express();
 
+// initialize middlewares
 app.use(cors());
 app.use(logger('dev'));
 app.use(express.json());
@@ -46,6 +49,7 @@ const postsRouter = require('./routes/posts');
 const commentsRouter = require('./routes/comments');
 const votesRouter = require('./routes/votes');
 
+// register routes
 app.use('/api', indexRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/posts', postsRouter);

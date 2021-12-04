@@ -5,6 +5,7 @@ const { body, param, validationResult } = require("express-validator");
 const Comment = require('../models/comment');
 const Post = require('../models/post');
 
+// Create new comment on a post
 router.post('/:postId/newComment',
     passport.authenticate('jwt', { session: false, failWithError: true }),
     param('postId').exists().isMongoId(),
@@ -36,6 +37,7 @@ router.post('/:postId/newComment',
         }
     });
 
+// Edit comment
 router.put('/:commentId/edit',
     passport.authenticate('jwt', { session: false, failWithError: true }),
     param('commentId').exists().isMongoId(),
@@ -54,6 +56,7 @@ router.put('/:commentId/edit',
                 return res.status(400).json({ success: false, message: "Bad Request" });
             }
 
+            // Can only be edited by author or admins
             if (req.user._id.equals(comment.user) || req.user.isAdmin) {
                 comment.body = req.body.body;
                 await comment.save();
@@ -66,6 +69,7 @@ router.put('/:commentId/edit',
         }
     });
 
+// Delete comment
 router.delete('/:commentId/delete',
     passport.authenticate('jwt', { session: false, failWithError: true }),
     param('commentId').exists().isMongoId(),
@@ -83,7 +87,9 @@ router.delete('/:commentId/delete',
                 return res.status(400).json({ success: false, message: "Bad Request" });
             }
 
+            // Can only be deleted by admin
             if (req.user.isAdmin) {
+                // Remove comment from post and then delete it
                 comment.post.comments.pull(comment);
                 await comment.delete();
                 await comment.post.save();

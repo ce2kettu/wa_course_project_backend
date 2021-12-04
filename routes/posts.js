@@ -5,6 +5,7 @@ const router = express.Router();
 const Post = require('../models/post');
 const Comment = require('../models/comment');
 
+// Return all posts
 router.get('/all', async (req, res, next) => {
     try {
         const posts = await Post.find({}).populate('user');
@@ -14,6 +15,7 @@ router.get('/all', async (req, res, next) => {
     }
 });
 
+// Return a specified post with also comments listed
 router.get('/:postId',
     param('postId').exists().isMongoId(),
     async (req, res, next) => {
@@ -24,6 +26,7 @@ router.get('/:postId',
                 return res.status(400).json({ success: false, message: "Bad Request", errors: errors.array() });
             }
 
+            // Find post and populate comments
             const post = await Post.findById(req.params.postId)
                 .populate('user')
                 .populate({
@@ -41,6 +44,7 @@ router.get('/:postId',
         }
     });
 
+// Create new post
 router.post('/new',
     passport.authenticate('jwt', { session: false, failWithError: true }),
     body('title').exists(),
@@ -64,6 +68,7 @@ router.post('/new',
         }
     });
 
+// Edit post
 router.put('/:postId/edit',
     passport.authenticate('jwt', { session: false, failWithError: true }),
     param('postId').exists().isMongoId(),
@@ -83,6 +88,7 @@ router.put('/:postId/edit',
                 return res.status(400).json({ success: false, message: "Bad Request" });
             }
 
+            // Can only edited by author or admins
             if (req.user._id.equals(post.user) || req.user.isAdmin) {
                 post.title = req.body.title;
                 post.body = req.body.body;
@@ -96,6 +102,7 @@ router.put('/:postId/edit',
         }
     });
 
+// Delete post
 router.delete('/:postId/delete',
     passport.authenticate('jwt', { session: false, failWithError: true }),
     param('postId').exists().isMongoId(),
@@ -113,9 +120,12 @@ router.delete('/:postId/delete',
                 return res.status(400).json({ success: false, message: "Bad Request" });
             }
 
+            // Can only be deleted by admin
             if (req.user.isAdmin) {
                 const postId = post._id;
                 await post.delete();
+
+                // Delete all related comments
                 Comment.remove({ post: postId }).exec();
                 res.json({ success: true });
             } else {

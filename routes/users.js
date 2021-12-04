@@ -6,8 +6,8 @@ const { param, body, validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const User = require('../models/user');
 
+// Return user profile
 router.get('/profile/:userId',
-  //passport.authenticate('jwt', { session: false, failWithError: true }),
   param('userId').exists().isMongoId(),
   async (req, res, next) => {
     try {
@@ -25,11 +25,29 @@ router.get('/profile/:userId',
     }
   });
 
+// Get authenticated user profile
 router.get('/profile',
   passport.authenticate('jwt', { session: false, failWithError: true }),
   async (req, res, next) => {
     try {
       const user = await User.findById(req.user._id).select('+bio +email +isAdmin');
+      return res.json({ success: true, profile: user });
+    } catch {
+      res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+  });
+
+router.post('/editProfile',
+  passport.authenticate('jwt', { session: false, failWithError: true }),
+  body('displayName').exists(),
+  body('bio').exists(),
+  async (req, res, next) => {
+    try {
+      const user = await User.findById(req.user._id).select('+bio +email +isAdmin');
+      user.bio = req.body.bio;
+      user.displayName = req.body.displayName;
+      await user.save();
+
       return res.json({ success: true, profile: user });
     } catch {
       res.status(500).json({ success: false, message: 'Internal Server Error' });
@@ -82,6 +100,7 @@ router.post('/login',
 
       const user = await User.findOne({ email: req.body.email }).select('+password +email');
 
+      // No user with such email
       if (!user) {
         return res.status(403).json({ success: false, message: 'Invalid credentials' });
       } else {
@@ -94,6 +113,7 @@ router.post('/login',
               email: user.email,
             }
 
+            // Send back a JWT token
             jwt.sign(
               jwtPayload,
               process.env.JWT_SECRET,
